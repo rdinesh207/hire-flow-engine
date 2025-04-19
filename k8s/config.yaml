@@ -1,0 +1,18 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recruitment-config
+data:
+  DATABASE_URL: "sqlite:///./data/recruitment.db"
+  PINECONE_ENVIRONMENT: "us-west4-gcp"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: recruitment-secrets
+type: Opaque
+data:
+  # These are placeholders, replace with base64 encoded actual values
+  GOOGLE_API_KEY: eW91ci1nb29nbGUtYXBpLWtleQo=
+  PINECONE_API_KEY: eW91ci1waW5lY29uZS1hcGkta2V5Cg==

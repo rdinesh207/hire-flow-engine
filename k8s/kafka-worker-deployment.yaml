@@ -1,0 +1,52 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-worker
+  labels:
+    app: kafka-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-worker
+  template:
+    metadata:
+      labels:
+        app: kafka-worker
+    spec:
+      containers:
+      - name: worker
+        image: recruitment-backend:latest
+        imagePullPolicy: Never
+        command: ["python", "-m", "backend.kafka_worker"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: recruitment-config
+              key: DATABASE_URL
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: recruitment-secrets
+              key: GOOGLE_API_KEY
+        - name: PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: recruitment-secrets
+              key: PINECONE_API_KEY
+        - name: PINECONE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: recruitment-config
+              key: PINECONE_ENVIRONMENT
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        volumeMounts:
+        - name: sqlite-data
+          mountPath: /app/data
+      volumes:
+      - name: sqlite-data
+        persistentVolumeClaim:
+          claimName: sqlite-pvc
