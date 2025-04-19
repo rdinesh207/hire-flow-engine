@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
 
-## Project info
+# HireFlow - AI-Powered Recruitment Matching Platform
 
-**URL**: https://lovable.dev/projects/09d6a6fe-e191-418e-91ba-c036f4fcd328
+HireFlow is a full-stack recruitment matching platform that uses AI to connect the right candidates with the right jobs. The platform leverages semantic matching, vector embeddings, and retrieval-augmented generation (RAG) to provide intelligent job and candidate recommendations.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+### For Recruiters
+- Upload and parse job descriptions automatically
+- Search for candidates based on semantic matching
+- View detailed candidate profiles with AI-generated insights
+- Export matched candidates for further processing
 
-**Use Lovable**
+### For Job Seekers
+- Upload and parse resumes automatically
+- Search for jobs based on semantic matching
+- View detailed job listings with AI-generated insights
+- Compare your skills with peers to identify skill gaps
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/09d6a6fe-e191-418e-91ba-c036f4fcd328) and start prompting.
+### AI & Machine Learning
+- Semantic search using vector embeddings
+- Personalized insights with retrieval-augmented generation
+- Skill gap analysis with visualizations
+- Job and candidate matching scores
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+### Frontend (Current Repository)
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui components
+- Recharts for visualizations
+- React Router for navigation
+- React Query for data fetching
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Backend (To be implemented)
+- Python + FastAPI
+- LangChain for parsing and RAG
+- PostgreSQL for structured data
+- Pinecone for vector embeddings
+- Apache Kafka for asynchronous processing
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Infrastructure (To be implemented)
+- Docker Compose for local development
+- Kubernetes manifests for deployment
+- Environment variables with `.env` support
 
-Follow these steps:
+## Local Development
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+This repository contains the frontend application. The backend implementation will be available soon.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/hire-flow.git
+cd hire-flow
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Start the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-**Use GitHub Codespaces**
+4. Open your browser and navigate to http://localhost:8080
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Demo Accounts
 
-## What technologies are used for this project?
+For demonstration purposes, you can use the following demo accounts:
 
-This project is built with:
+### Recruiter
+- Email: jordan@example.com
+- Password: demo123
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Job Seeker
+- Email: emily@example.com
+- Password: demo123
 
-## How can I deploy this project?
+## Architecture
 
-Simply open [Lovable](https://lovable.dev/projects/09d6a6fe-e191-418e-91ba-c036f4fcd328) and click on Share -> Publish.
+The application follows a modern architecture pattern:
 
-## Can I connect a custom domain to my Lovable project?
+1. **Frontend**
+   - React components for UI
+   - React Router for navigation
+   - Context API for state management
+   - TypeScript for type safety
+   - Responsive design with Tailwind CSS
 
-Yes, you can!
+2. **Backend** (Coming soon)
+   - RESTful API with FastAPI
+   - Database layer with SQLAlchemy
+   - Vector embeddings with Pinecone
+   - Asynchronous processing with Kafka
+   - LangChain for NLP tasks
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+3. **Infrastructure** (Coming soon)
+   - Docker containers
+   - Kubernetes orchestration
+   - CI/CD pipeline
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Roadmap
+
+- [ ] Implement backend services with FastAPI
+- [ ] Add real-time notifications
+- [ ] Develop mobile application
+- [ ] Add interview scheduling functionality
+- [ ] Implement chatbot for user assistance
+
+## License
+
+[MIT](LICENSE)
