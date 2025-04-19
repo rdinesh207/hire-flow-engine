@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { applicantsService } from "@/services/api";
 import { ApplicantProfile, HeatmapData, ComparisonResult } from "@/types";
 import { User, Users, CheckCircle, ArrowRight } from "lucide-react";
+import * as React from "react";
 import { 
   ResponsiveContainer, 
   BarChart, 

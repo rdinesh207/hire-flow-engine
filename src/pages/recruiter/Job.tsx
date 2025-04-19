@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -10,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { jobsService } from "@/services/api";
 import { JobListing, MatchResult, ApplicantProfile, RAGSummary } from "@/types";
-import { FileText, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { FileText, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, Users } from "lucide-react";
 
 const RecruiterJob = () => {
   const { id } = useParams<{ id: string }>();

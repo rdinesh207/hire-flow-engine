@@ -103,7 +103,7 @@ const DashboardSidebar = () => {
               <SidebarMenu>
                 {recruiterMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild active={item.active}>
+                    <SidebarMenuButton asChild isActive={item.active}>
                       <Link to={item.url} className="flex items-center space-x-3">
                         <item.icon className="h-5 w-5" />
                         <span>{item.title}</span>
@@ -123,7 +123,7 @@ const DashboardSidebar = () => {
               <SidebarMenu>
                 {applicantMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild active={item.active}>
+                    <SidebarMenuButton asChild isActive={item.active}>
                       <Link to={item.url} className="flex items-center space-x-3">
                         <item.icon className="h-5 w-5" />
                         <span>{item.title}</span>
