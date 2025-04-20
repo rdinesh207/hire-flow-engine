@@ -1,139 +1,109 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../types';
-import { authService } from '../services/api';
-import { useToast } from '@/components/ui/use-toast';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from '@/types';
+import axios from 'axios';
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  register: (name: string, email: string, password: string, role: 'recruiter' | 'applicant') => Promise<boolean>;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (userData: Partial<User>, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
+    // Check if user is already logged in
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
       try {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error("Auth initialization error:", error);
-      } finally {
-        setLoading(false);
+        console.error("Failed to parse stored user:", error);
+        localStorage.removeItem('user');
       }
-    };
-
-    initAuth();
+    }
+    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
-      setLoading(true);
-      const user = await authService.login(email, password);
+      setIsLoading(true);
       
-      if (user) {
-        setUser(user);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${user.name}!`,
-        });
-        return true;
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: "Invalid email or password. Please try again.",
-        });
-        return false;
-      }
+      // In a real app, we would call the backend login endpoint here
+      // For now, we'll simulate a successful login with static data
+      // TODO: Replace with actual API call when backend authentication is implemented
+      
+      // For demo purposes, determine user role from email
+      const role = email.includes('recruiter') ? 'recruiter' : 
+                 email.includes('admin') ? 'admin' : 'applicant';
+      
+      const userData: User = {
+        id: `user-${Date.now()}`,
+        name: email.split('@')[0],
+        email,
+        role,
+        createdAt: new Date().toISOString(),
+        avatar: `https://i.pravatar.cc/150?u=${email}`
+      };
+      
+      // Save user to localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        variant: "destructive",
-        title: "Login error",
-        description: "An unexpected error occurred. Please try again later.",
-      });
-      return false;
+      console.error("Login failed:", error);
+      throw new Error('Login failed. Please check your credentials and try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const register = async (
-    name: string, 
-    email: string, 
-    password: string, 
-    role: 'recruiter' | 'applicant'
-  ): Promise<boolean> => {
-    try {
-      setLoading(true);
-      const newUser = await authService.register(name, email, password, role);
-      
-      if (newUser) {
-        setUser(newUser);
-        toast({
-          title: "Registration successful",
-          description: `Welcome to Hire Flow, ${newUser.name}!`,
-        });
-        return true;
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Registration failed",
-          description: "Unable to create account. Please try again.",
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast({
-        variant: "destructive",
-        title: "Registration error",
-        description: "An unexpected error occurred. Please try again later.",
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
+  const logout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
-  const logout = async (): Promise<void> => {
+  const register = async (userData: Partial<User>, password: string) => {
     try {
-      setLoading(true);
-      await authService.logout();
-      setUser(null);
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
+      setIsLoading(true);
+      
+      // In a real app, we would call the backend registration endpoint here
+      // For now, we'll simulate a successful registration with static data
+      // TODO: Replace with actual API call when backend authentication is implemented
+      
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        name: userData.name || 'New User',
+        email: userData.email || '',
+        role: userData.role || 'applicant',
+        createdAt: new Date().toISOString(),
+        avatar: `https://i.pravatar.cc/150?u=${userData.email}`
+      };
+      
+      // Save user to localStorage
+      localStorage.setItem('user', JSON.stringify(newUser));
+      setUser(newUser);
     } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        variant: "destructive",
-        title: "Logout error",
-        description: "An error occurred during logout.",
-      });
+      console.error("Registration failed:", error);
+      throw new Error('Registration failed. Please try again later.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

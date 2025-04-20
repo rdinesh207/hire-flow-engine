@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,32 +25,30 @@ import {
   PolarRadiusAxis,
   Radar
 } from "recharts";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
-// Custom heatmap component
 const Heatmap = ({ data }: { data: HeatmapData[] }) => {
   const skills = Array.from(new Set(data.map(d => d.x)));
   const peers = Array.from(new Set(data.map(d => d.y)));
   
   const getColor = (value: number) => {
-    // Color gradient from light blue to dark blue
-    if (value >= 0.9) return "#1A365D"; // Very dark blue
-    if (value >= 0.7) return "#2B6CB0"; // Dark blue
-    if (value >= 0.5) return "#4299E1"; // Medium blue
-    if (value >= 0.3) return "#90CDF4"; // Light blue
-    return "#EBF8FF"; // Very light blue
+    if (value >= 0.9) return "#1A365D";
+    if (value >= 0.7) return "#2B6CB0";
+    if (value >= 0.5) return "#4299E1";
+    if (value >= 0.3) return "#90CDF4";
+    return "#EBF8FF";
   };
   
   return (
     <div className="overflow-x-auto">
       <div className="min-w-max">
         <div className="grid" style={{ gridTemplateColumns: `auto ${peers.map(() => "1fr").join(" ")}` }}>
-          {/* Header row */}
           <div className="p-2 font-medium"></div>
           {peers.map(peer => (
             <div key={peer} className="p-2 text-center font-medium">{peer}</div>
           ))}
           
-          {/* Data rows */}
           {skills.map(skill => (
             <React.Fragment key={skill}>
               <div className="p-2 font-medium">{skill}</div>
@@ -88,25 +85,39 @@ const ApplicantCompare = () => {
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [loading, setLoading] = useState(true);
   const [comparing, setComparing] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchPeers = async () => {
       try {
-        // Fetch all applicants as potential peers
+        if (!user?.id) {
+          toast({
+            title: "No user found",
+            description: "Please login or register first",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
         const applicantsData = await applicantsService.getApplicants();
-        // Exclude the current user (using a mock ID for demo)
-        const currentUserId = "applicant-1";
-        const peersList = applicantsData.filter(a => a.id !== currentUserId);
+        const peersList = applicantsData.filter(a => a.id !== user.id);
         setPeers(peersList);
       } catch (error) {
         console.error("Error fetching peers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch peers for comparison. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchPeers();
-  }, []);
+  }, [user]);
 
   const handleTogglePeer = (peerId: string) => {
     setSelectedPeers(prev => 
@@ -117,28 +128,28 @@ const ApplicantCompare = () => {
   };
 
   const handleCompare = async () => {
-    if (selectedPeers.length === 0) return;
+    if (selectedPeers.length === 0 || !user?.id) return;
     
     try {
       setComparing(true);
-      // Mock user ID for demo
-      const currentUserId = "applicant-1";
       
-      // Get comparison results
-      const results = await applicantsService.compareWithPeers(currentUserId, selectedPeers);
+      const results = await applicantsService.compareWithPeers(user.id, selectedPeers);
       setComparisonResults(results);
       
-      // Get heatmap data
-      const heatmap = await applicantsService.getComparisonHeatmap(currentUserId, selectedPeers);
+      const heatmap = await applicantsService.getComparisonHeatmap(user.id, selectedPeers);
       setHeatmapData(heatmap);
     } catch (error) {
       console.error("Error comparing peers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to perform comparison. Please try again later.",
+        variant: "destructive"
+      });
     } finally {
       setComparing(false);
     }
   };
 
-  // Prepare data for charts
   const prepareSkillsComparisonData = () => {
     if (!heatmapData.length) return [];
 

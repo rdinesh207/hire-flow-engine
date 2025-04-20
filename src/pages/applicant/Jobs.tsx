@@ -10,27 +10,54 @@ import { Progress } from "@/components/ui/progress";
 import { applicantsService } from "@/services/api";
 import { MatchResult, JobListing } from "@/types";
 import { Search, FileText } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const ApplicantJobs = () => {
   const [matchedJobs, setMatchedJobs] = useState<MatchResult<JobListing>[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        // Using a static applicant ID for demo
-        const applicantId = "applicant-1";
-        const jobMatches = await applicantsService.searchJobs(applicantId);
+        if (!user?.id) {
+          toast({
+            title: "No user found",
+            description: "Please login or register first",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+        
+        const jobMatches = await applicantsService.searchJobs(user.id);
         setMatchedJobs(jobMatches);
       } catch (error) {
         console.error("Error fetching job matches:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch job matches. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobs();
-  }, []);
+  }, [user]);
+
+  // Filter jobs based on search term
+  const filteredJobs = searchTerm.trim() 
+    ? matchedJobs.filter(job => 
+        job.item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.item.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.item.keywords.some(kw => kw.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : matchedJobs;
 
   return (
     <DashboardLayout>
@@ -49,8 +76,10 @@ const ApplicantJobs = () => {
               <Input
                 placeholder="Search jobs by title, company, or keywords..."
                 className="flex-1"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button>
+              <Button onClick={() => setSearchTerm("")}>
                 <Search className="mr-2 h-4 w-4" />
                 Search
               </Button>
@@ -64,7 +93,7 @@ const ApplicantJobs = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {matchedJobs.map((match) => (
+            {filteredJobs.map((match) => (
               <Card key={match.item.id} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="p-6">
@@ -124,7 +153,7 @@ const ApplicantJobs = () => {
               </Card>
             ))}
 
-            {matchedJobs.length === 0 && (
+            {filteredJobs.length === 0 && (
               <Card className="bg-gray-50 border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-10">
                   <FileText className="h-8 w-8 text-gray-400 mb-2" />

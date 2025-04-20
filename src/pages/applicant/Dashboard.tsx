@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -11,30 +10,43 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { applicantsService } from "@/services/api";
 import { JobListing, MatchResult } from "@/types";
 import { ArrowRight, FileText, Search, ListFilter, CheckCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const ApplicantDashboard = () => {
   const { user } = useAuth();
   const [matchedJobs, setMatchedJobs] = useState<MatchResult<JobListing>[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Since this is a demo, we'll use a static ID
-        const applicantId = "applicant-1";
+        if (!user?.id) {
+          toast({
+            title: "No user found",
+            description: "Please login or register first",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
         
-        // Fetch jobs that match this applicant
-        const matches = await applicantsService.searchJobs(applicantId);
+        const matches = await applicantsService.searchJobs(user.id);
         setMatchedJobs(matches);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch matching jobs. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user]);
 
   return (
     <DashboardLayout>
@@ -137,7 +149,6 @@ const ApplicantDashboard = () => {
                             </span>
                           </div>
                         ))}
-                        {/* Additional match info */}
                         <div className="flex items-start">
                           <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
                           <span className="text-sm">

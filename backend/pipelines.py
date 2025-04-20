@@ -1,11 +1,10 @@
-
 import os
 import json
 import fitz  # PyMuPDF for PDF processing
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from pinecone import Pinecone
-from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
+from pinecone import Pinecone, ServerlessSpec
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Pinecone as LangchainPinecone
 from langchain.docstore.document import Document
 import uuid
@@ -20,8 +19,8 @@ PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "us-west4-gcp")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
 # Initialize LLM and embeddings
-llm = VertexAI(model_name="gemini-pro", temperature=0)
-embeddings = VertexAIEmbeddings(model_name="gemini-embedding-exp-03-07")
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GOOGLE_API_KEY, temperature=0)
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GOOGLE_API_KEY)
 
 # Ensure indexes exist
 def ensure_pinecone_indexes():
@@ -32,14 +31,16 @@ def ensure_pinecone_indexes():
         pc.create_index(
             name="jobs-index",
             dimension=768,  # Dimension of the embedding model
-            metric="cosine"
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
     
     if "apps-index" not in current_indexes:
         pc.create_index(
             name="apps-index",
             dimension=768,  # Dimension of the embedding model
-            metric="cosine"
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1")
         )
 
 # Document parsing
@@ -208,7 +209,6 @@ def upsert_job_embedding(job_data: Dict[str, Any]):
 
 def upsert_applicant_embedding(applicant_data: Dict[str, Any]):
     """Generate embedding for applicant and store in Pinecone."""
-    # Create document from applicant data
     # Extract skills from work experience
     all_skills = []
     for exp in applicant_data.get("workExperience", []):
@@ -382,10 +382,10 @@ def compare_applicants(applicant_id_a: str, applicant_id_b: str) -> Dict[str, An
     - Skills: {", ".join(skills_b)}
     
     Respond with JSON containing:
-    {
+    {{
       "skillGaps": ["list", "of", "skills", "that", "A", "lacks"],
       "recommendations": ["list", "of", "specific", "recommendations"]
-    }
+    }}
     """
     
     response = llm.invoke(prompt)

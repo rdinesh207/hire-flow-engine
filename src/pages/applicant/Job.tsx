@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -10,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { jobsService, applicantsService } from "@/services/api";
 import { JobListing, RAGSummary } from "@/types";
 import { FileText, Calendar, MapPin, CheckCircle, XCircle, ArrowLeft, ExternalLink, BriefcaseBusiness } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const ApplicantJob = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,39 +18,69 @@ const ApplicantJob = () => {
   const [jobSummary, setJobSummary] = useState<RAGSummary | null>(null);
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchJobData = async () => {
       try {
         setLoading(true);
-        if (id) {
-          const jobData = await jobsService.getJob(id);
-          setJob(jobData);
+        if (!id) {
+          toast({
+            title: "Error",
+            description: "No job ID provided",
+            variant: "destructive"
+          });
+          return;
+        }
 
-          if (jobData) {
-            // Fetch RAG summary for this job
+        if (!user?.id) {
+          toast({
+            title: "No user found",
+            description: "Please login or register first",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Fetch job details
+        const jobData = await jobsService.getJob(id);
+        setJob(jobData);
+
+        if (jobData) {
+          // Fetch RAG summary for this job
+          try {
             const summary = await jobsService.getJobRAGSummary(id);
             setJobSummary(summary);
+          } catch (error) {
+            console.error("Error fetching job RAG summary:", error);
+          }
 
-            // Fetch applicant's jobs to get match score
-            // Using a static ID for demo purposes
-            const applicantId = "applicant-1";
-            const matches = await applicantsService.searchJobs(applicantId);
+          // Fetch applicant's jobs to get match score
+          try {
+            const matches = await applicantsService.searchJobs(user.id);
             const thisJobMatch = matches.find(match => match.item.id === id);
             if (thisJobMatch) {
               setMatchScore(thisJobMatch.score);
             }
+          } catch (error) {
+            console.error("Error fetching job match score:", error);
           }
         }
       } catch (error) {
         console.error("Error fetching job data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch job details. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobData();
-  }, [id]);
+  }, [id, user]);
 
   if (loading) {
     return (
