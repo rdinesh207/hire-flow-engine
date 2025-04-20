@@ -3,14 +3,13 @@ import os
 import json
 import fitz  # PyMuPDF for PDF processing
 from typing import Dict, List, Any, Optional
-import pinecone
-from langchain.chains import RetrievalQA
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from datetime import datetime
+from pinecone import Pinecone
 from langchain_google_vertexai import VertexAI, VertexAIEmbeddings
-from langchain.vectorstores import Pinecone
+from langchain_community.vectorstores import Pinecone as LangchainPinecone
 from langchain.docstore.document import Document
-from pydantic import BaseModel
 import uuid
+import numpy as np
 
 # Setup API keys from environment
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -18,7 +17,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "us-west4-gcp")
 
 # Initialize Pinecone
-pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENVIRONMENT)
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
 # Initialize LLM and embeddings
 llm = VertexAI(model_name="gemini-pro", temperature=0)
@@ -27,17 +26,17 @@ embeddings = VertexAIEmbeddings(model_name="gemini-embedding-exp-03-07")
 # Ensure indexes exist
 def ensure_pinecone_indexes():
     """Create Pinecone indexes if they don't exist."""
-    current_indexes = pinecone.list_indexes()
+    current_indexes = [index.name for index in pc.list_indexes()]
     
     if "jobs-index" not in current_indexes:
-        pinecone.create_index(
+        pc.create_index(
             name="jobs-index",
             dimension=768,  # Dimension of the embedding model
             metric="cosine"
         )
     
     if "apps-index" not in current_indexes:
-        pinecone.create_index(
+        pc.create_index(
             name="apps-index",
             dimension=768,  # Dimension of the embedding model
             metric="cosine"
@@ -184,7 +183,7 @@ def upsert_job_embedding(job_data: Dict[str, Any]):
     job_embed = embeddings.embed_query(job_text)
     
     # Connect to Pinecone index
-    index = pinecone.Index("jobs-index")
+    index = pc.Index("jobs-index")
     
     # Create metadata
     metadata = {
@@ -233,7 +232,7 @@ def upsert_applicant_embedding(applicant_data: Dict[str, Any]):
     applicant_embed = embeddings.embed_query(applicant_text)
     
     # Connect to Pinecone index
-    index = pinecone.Index("apps-index")
+    index = pc.Index("apps-index")
     
     # Create metadata
     metadata = {
@@ -259,7 +258,7 @@ def upsert_applicant_embedding(applicant_data: Dict[str, Any]):
 def search_jobs_for_applicant(applicant_id: str, top_k: int = 5) -> List[Dict[str, Any]]:
     """Find top matching jobs for an applicant."""
     # Get applicant data first
-    applicant_index = pinecone.Index("apps-index")
+    applicant_index = pc.Index("apps-index")
     applicant_vectors = applicant_index.fetch(ids=[applicant_id], namespace="applicants")
     
     if not applicant_vectors.vectors:
@@ -269,7 +268,7 @@ def search_jobs_for_applicant(applicant_id: str, top_k: int = 5) -> List[Dict[st
     applicant_vector = applicant_vectors.vectors[applicant_id].values
     
     # Search in jobs index
-    job_index = pinecone.Index("jobs-index")
+    job_index = pc.Index("jobs-index")
     search_results = job_index.query(
         vector=applicant_vector,
         top_k=top_k,
@@ -299,7 +298,7 @@ def search_jobs_for_applicant(applicant_id: str, top_k: int = 5) -> List[Dict[st
 def search_applicants_for_job(job_id: str, top_k: int = 5) -> List[Dict[str, Any]]:
     """Find top matching applicants for a job."""
     # Get job data first
-    job_index = pinecone.Index("jobs-index")
+    job_index = pc.Index("jobs-index")
     job_vectors = job_index.fetch(ids=[job_id], namespace="jobs")
     
     if not job_vectors.vectors:
@@ -309,7 +308,7 @@ def search_applicants_for_job(job_id: str, top_k: int = 5) -> List[Dict[str, Any
     job_vector = job_vectors.vectors[job_id].values
     
     # Search in applicants index
-    applicant_index = pinecone.Index("apps-index")
+    applicant_index = pc.Index("apps-index")
     search_results = applicant_index.query(
         vector=job_vector,
         top_k=top_k,
@@ -339,7 +338,7 @@ def search_applicants_for_job(job_id: str, top_k: int = 5) -> List[Dict[str, Any
 def compare_applicants(applicant_id_a: str, applicant_id_b: str) -> Dict[str, Any]:
     """Compare two applicants and provide analysis."""
     # Get both applicant data
-    applicant_index = pinecone.Index("apps-index")
+    applicant_index = pc.Index("apps-index")
     applicant_vectors = applicant_index.fetch(
         ids=[applicant_id_a, applicant_id_b], 
         namespace="applicants"
@@ -357,7 +356,6 @@ def compare_applicants(applicant_id_a: str, applicant_id_b: str) -> Dict[str, An
     metadata_b = applicant_vectors.vectors[applicant_id_b].metadata
     
     # Calculate cosine similarity
-    import numpy as np
     similarity_score = np.dot(vector_a, vector_b) / (np.linalg.norm(vector_a) * np.linalg.norm(vector_b))
     
     # Generate comparison analysis with LLM
@@ -414,7 +412,7 @@ def compare_applicants(applicant_id_a: str, applicant_id_b: str) -> Dict[str, An
 def generate_job_rag_summary(job_id: str) -> Dict[str, Any]:
     """Generate a RAG summary for a job."""
     # Get job data
-    job_index = pinecone.Index("jobs-index")
+    job_index = pc.Index("jobs-index")
     job_vectors = job_index.fetch(ids=[job_id], namespace="jobs")
     
     if not job_vectors.vectors:
@@ -465,7 +463,7 @@ def generate_job_rag_summary(job_id: str) -> Dict[str, Any]:
 def generate_applicant_rag_summary(applicant_id: str) -> Dict[str, Any]:
     """Generate a RAG summary for an applicant."""
     # Get applicant data
-    applicant_index = pinecone.Index("apps-index")
+    applicant_index = pc.Index("apps-index")
     applicant_vectors = applicant_index.fetch(ids=[applicant_id], namespace="applicants")
     
     if not applicant_vectors.vectors:
@@ -517,7 +515,7 @@ def generate_comparison_heatmap(applicant_id: str, peer_ids: List[str]) -> List[
     """Generate heatmap data for comparison."""
     # Get all applicants' data
     all_ids = [applicant_id] + peer_ids
-    applicant_index = pinecone.Index("apps-index")
+    applicant_index = pc.Index("apps-index")
     all_vectors = applicant_index.fetch(ids=all_ids, namespace="applicants")
     
     if not all_vectors.vectors:

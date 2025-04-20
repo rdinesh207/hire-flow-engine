@@ -21,6 +21,7 @@ services:
       - kafka
     networks:
       - recruitment-network
+    command: sh -c "mkdir -p /app/data && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
 
   frontend:
     build:
@@ -67,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    command: python -m backend.kafka_worker
+    command: sh -c "mkdir -p /app/data && python -m backend.kafka_worker"
     environment:
       - DATABASE_URL=sqlite:///./data/recruitment.db
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
